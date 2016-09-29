@@ -5,8 +5,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.util.Log;
 
+import java.sql.Time;
 import java.util.ArrayList;
 
+import cs.umass.edu.myactivitiestoolkit.constants.Constants;
 import cs.umass.edu.myactivitiestoolkit.processing.Filter;
 
 /**
@@ -21,6 +23,11 @@ public class StepDetector implements SensorEventListener {
 
     /** Maintains the set of listeners registered to handle step events. **/
     private ArrayList<OnStepListener> mStepListeners;
+    private Filter filter = new Filter(1);
+    //.5 seconds
+    private double minTime = 1000000*1000*.5;
+    private long maxTime =1000000*1000*2;
+    private long lastStepped = 0;
 
     /**
      * The number of steps taken.
@@ -66,9 +73,29 @@ public class StepDetector implements SensorEventListener {
      */
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+        Log.i(TAG,"In OnSensorChanged in StepDetector");
+        Log.i(TAG,event.sensor.getType()+"");
 
+        if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
+        Log.i(TAG,"After If In OnSensorChanged in StepDetector");
             //TODO: Detect steps! Call onStepDetected(...) when a step is detected.
+           long currTime = event.timestamp;
+            //If it hasn't been our minimum threshold
+            Log.i(TAG,"current Time: "+currTime);
+            Log.i(TAG,"last Stepped: "+lastStepped);
+            if(((currTime-lastStepped) >= minTime )){
+                lastStepped = currTime;
+                double [] hold = filter.getFilteredValues(event.values);
+                float [] someValues = new float[hold.length];
+                    for (int i = 0; i < hold.length; i++) {
+                        someValues[i]=(float)hold[i];
+                    }
+
+                onStepDetected(currTime,someValues);
+            }
+
+
+
 
         }
     }
