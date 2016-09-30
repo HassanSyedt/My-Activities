@@ -174,7 +174,7 @@ public class AccelerometerService extends SensorService implements SensorEventLi
         //TODO : (Assignment 1) Register your step detector. Register an OnStepListener to receive step events
 //        mSensorManager.registerListener(this,mStepSensor,SensorManager.SENSOR_DELAY_NORMAL);
         mStepDetector.registerOnStepListener(this);
-        mSensorManager.registerListener(mStepDetector,mStepSensor,SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(mStepDetector,mAccelerometerSensor,SensorManager.SENSOR_DELAY_NORMAL);
 
     }
 
@@ -239,11 +239,11 @@ public class AccelerometerService extends SensorService implements SensorEventLi
 //                    event.values[1] + ", Z : " + event.values[2]);
             // convert the timestamp to milliseconds (note this is not in Unix time)
             long timestamp_in_milliseconds = (long) ((double) event.timestamp / Constants.TIMESTAMPS.NANOSECONDS_PER_MILLISECOND);
+            float [] fv = filter.getFilteredValues(event.values);
 
             //TODO: Send the accelerometer reading to the server
-            AccelerometerReading reading = new AccelerometerReading(mUserID,"Nexus 6p","MOBILE",timestamp_in_milliseconds,event.values);
+            AccelerometerReading reading = new AccelerometerReading(mUserID,"Nexus 6p","MOBILE",timestamp_in_milliseconds,fv);
             mClient.sendSensorReading(reading);
-
 
             //TODO: broadcast the accelerometer reading to the UI
             broadcastAccelerometerReading(timestamp_in_milliseconds,event.values);
@@ -251,7 +251,7 @@ public class AccelerometerService extends SensorService implements SensorEventLi
         }else if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
 
             // we received a step event detected by the built-in Android step detector (assignment 1)
-           // broadcastAndroidStepCount(mAndroidStepCount++);
+            broadcastAndroidStepCount(mAndroidStepCount++);
 
         } else {
 
@@ -324,7 +324,7 @@ public class AccelerometerService extends SensorService implements SensorEventLi
 
     @Override
     public void onStepCountUpdated(int stepCount) {
-        broadcastAndroidStepCount(stepCount);
+        broadcastLocalStepCount(stepCount);
         Log.w(TAG,stepCount+"");
     }
 

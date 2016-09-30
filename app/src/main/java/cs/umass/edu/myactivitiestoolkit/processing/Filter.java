@@ -22,15 +22,15 @@ public class Filter {
 	
 	private int SMOOTH_FACTOR = 2;
 	
-	private double CUTOFF_FREQUENCY = 1.0;
+	private float CUTOFF_FREQUENCY = 1.0f;
 	
-	private double ax[] = new double[3];
-	private double by[] = new double[3];
+	private float ax[] = new float[3];
+	private float by[] = new float[3];
 	
-	private double xv[][] = null;
-	private double yv[][] = null;
+	private float xv[][] = null;
+	private float yv[][] = null;
 	
-	private double expectedValue[] =null;
+	private float expectedValue[] =null;
 	private static final double INVALID = Double.NEGATIVE_INFINITY;
 	
 	private static final int NUM_ACCEL_FIELDS = 3;
@@ -42,18 +42,18 @@ public class Filter {
 	public Filter(int smoothFactor) {
 		FILTER_TYPE = FilterType.SMOOTHING;
 		SMOOTH_FACTOR = (smoothFactor>=1?smoothFactor:1);
-		expectedValue = new double[NUM_ACCEL_FIELDS];
+		expectedValue = new float[NUM_ACCEL_FIELDS];
 	}
 	
 	/**
 	 * Use this constructor to use a Butterworth filter.
 	 * @param cutoffFrequency the frequency threshold for smoothing.
 	 */
-	public Filter(double cutoffFrequency) {
+	public Filter(float cutoffFrequency) {
 		FILTER_TYPE = FilterType.BUTTERWORTH;
 		CUTOFF_FREQUENCY = cutoffFrequency;
-		xv = new double[NUM_ACCEL_FIELDS][3];
-		yv = new double[NUM_ACCEL_FIELDS][3];
+		xv = new float[NUM_ACCEL_FIELDS][3];
+		yv = new float[NUM_ACCEL_FIELDS][3];
 		getLPCoefficientsButterworth2Pole(SAMPLE_RATE, CUTOFF_FREQUENCY);
 	}
 	
@@ -63,8 +63,8 @@ public class Filter {
 	 * @param values the accelerometer values along the x, y and z axes
 	 * @return the filtered accelerometer values.
 	 */
-	public double[] getFilteredValues(float... values) {
-		double result[] = new double[NUM_ACCEL_FIELDS];
+	public float[] getFilteredValues(float... values) {
+		float result[] = new float[NUM_ACCEL_FIELDS];
 		if(FILTER_TYPE == FilterType.BUTTERWORTH) {
 			for (int i = 0; i < values.length; i++){
 				result[i] = getButterworthFilteredValue(values[i], i);
@@ -90,7 +90,7 @@ public class Filter {
 	 * @param filterIndex
 	 * @return
 	 */
-	private double getButterworthFilteredValue(double sample, int filterIndex) {
+	private float getButterworthFilteredValue(float sample, int filterIndex) {
 		xv[filterIndex][2] = xv[filterIndex][1]; xv[filterIndex][1] = xv[filterIndex][0];
 		xv[filterIndex][0] = sample;
 		yv[filterIndex][2] = yv[filterIndex][1]; yv[filterIndex][1] = yv[filterIndex][0];
@@ -108,7 +108,7 @@ public class Filter {
 	 * @param filterIndex
 	 * @return
 	 */
-	private double getSmoothedValue(double sample, int filterIndex) {
+	private float getSmoothedValue(float sample, int filterIndex) {
 		if(expectedValue[filterIndex]==INVALID) {
 			expectedValue[filterIndex] = sample;
 			return expectedValue[filterIndex];
@@ -133,12 +133,12 @@ public class Filter {
 		double QcWarp = Math.tan(QcRaw); // Warp cutoff frequency
 
 		double gain = 1 / (1+sqrt2/QcWarp + 2/(QcWarp*QcWarp));
-		by[2] = (1 - sqrt2/QcWarp + 2/(QcWarp*QcWarp)) * gain;
-		by[1] = (2 - 2 * 2/(QcWarp*QcWarp)) * gain;
+		by[2] = (float)((1 - sqrt2/QcWarp + 2/(QcWarp*QcWarp)) * gain);
+		by[1] = (float)((2 - 2 * 2/(QcWarp*QcWarp)) * gain);
 		by[0] = 1;
-		ax[0] = 1 * gain;
-		ax[1] = 2 * gain;
-		ax[2] = 1 * gain;
+		ax[0] = (float)(1 * gain);
+		ax[1] = (float)(2 * gain);
+		ax[2] = (float)(1 * gain);
 	}
 	
 	
