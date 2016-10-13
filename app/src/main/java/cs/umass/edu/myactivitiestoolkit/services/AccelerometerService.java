@@ -85,7 +85,7 @@ import edu.umass.cs.MHLClient.sensors.SensorReading;
  */
 public class AccelerometerService extends SensorService implements SensorEventListener,OnStepListener {
 
-
+    int serverStepCount = 0;
 
 
     /** Used during debugging to identify logs by class */
@@ -131,10 +131,14 @@ public class AccelerometerService extends SensorService implements SensorEventLi
             @Override
             protected void onMessageReceived(JSONObject json) {
                 Log.d(TAG, "Received step update from server.");
+
+                serverStepCount++;
+                broadcastServerStepCount(serverStepCount);
                 try {
                     JSONObject data = json.getJSONObject("data");
                     long timestamp = data.getLong("timestamp");
                     Log.d(TAG, "Step occurred at " + timestamp + ".");
+
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -247,7 +251,7 @@ public class AccelerometerService extends SensorService implements SensorEventLi
             mClient.sendSensorReading(reading);
 
             //TODO: broadcast the accelerometer reading to the UI
-            broadcastAccelerometerReading(timestamp_in_milliseconds,event.values);
+            broadcastAccelerometerReading(timestamp_in_milliseconds,fv);
 
         }else if (event.sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
 
@@ -308,6 +312,14 @@ public class AccelerometerService extends SensorService implements SensorEventLi
 
 
     // TODO: (Assignment 1) Broadcast the step count as computed by your server-side algorithm.
+
+    public void broadcastServerStepCount( int stepCount){
+        Intent intent = new Intent();
+        intent.putExtra(Constants.KEY.STEP_COUNT, stepCount);
+        intent.setAction(Constants.ACTION.BROADCAST_SERVER_STEP_COUNT);
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.sendBroadcast(intent);
+    }
 
 
     /**

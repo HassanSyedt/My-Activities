@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -213,6 +214,15 @@ public class ExerciseFragment extends Fragment {
                         mPeakValues.add(values[2]); //place on z-axis signal
                     }
                 }
+                else if(intent.getAction().equals(Constants.ACTION.BROADCAST_SERVER_STEP_COUNT)){
+                    Log.i(TAG, "do we ever get here");
+                    int stepCount = intent.getIntExtra(Constants.KEY.STEP_COUNT, 0);
+                    displayServerStepCount(stepCount);
+
+
+
+                }
+
             }
         }
     };
@@ -330,6 +340,7 @@ public class ExerciseFragment extends Fragment {
         filter.addAction(Constants.ACTION.BROADCAST_ACCELEROMETER_PEAK);
         filter.addAction(Constants.ACTION.BROADCAST_ANDROID_STEP_COUNT);
         filter.addAction(Constants.ACTION.BROADCAST_LOCAL_STEP_COUNT);
+        filter.addAction(Constants.ACTION.BROADCAST_SERVER_STEP_COUNT);
         broadcastManager.registerReceiver(receiver, filter);
     }
 
@@ -385,6 +396,15 @@ public class ExerciseFragment extends Fragment {
             @Override
             public void run() {
                 txtAndroidStepCount.setText(String.format(Locale.getDefault(), getString(R.string.android_step_count), stepCount));
+            }
+        });
+    }
+
+    private void displayServerStepCount ( final int stepCount){
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                txtServerStepCount.setText(String.format(Locale.getDefault(), getString(R.string.server_step_count), stepCount));
             }
         });
     }
