@@ -242,6 +242,7 @@ public class AccelerometerService extends SensorService implements SensorEventLi
             float [] fv = filter.getFilteredValues(event.values);
 
             //TODO: Send the accelerometer reading to the server
+            //MODIFY THIS TO SEND LABELS ACCORDING TO WHAT ACTIVITY I'm DOING
             AccelerometerReading reading = new AccelerometerReading(mUserID,"Nexus 6p","MOBILE",timestamp_in_milliseconds,fv);
             mClient.sendSensorReading(reading);
 

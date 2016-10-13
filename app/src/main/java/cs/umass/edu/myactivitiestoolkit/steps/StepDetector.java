@@ -7,11 +7,13 @@ import android.util.Log;
 
 import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import cs.umass.edu.myactivitiestoolkit.constants.Constants;
 import cs.umass.edu.myactivitiestoolkit.processing.Filter;
+import edu.umass.cs.MHLClient.sensors.SensorReading;
 
 /**
  * This class is responsible for detecting steps from the accelerometer sensor.
@@ -29,8 +31,9 @@ public class StepDetector implements SensorEventListener {
      * Maintains the set of listeners registered to handle step events.
      **/
     private ArrayList<OnStepListener> mStepListeners;
-    private Filter filter = new Filter(1);
+    private Filter filter = new Filter(3.0f);
     private LinkedList<Float []> buffer = new LinkedList<>();
+    private LinkedList<Long> timeStampBuffer = new LinkedList<>();
     //.5 seconds
     private double window = 1000000 * 1000*.5;
     private long lastStepped = 0;
@@ -81,6 +84,67 @@ public class StepDetector implements SensorEventListener {
         mStepListeners.clear();
     }
 
+
+
+    public float [] calcMags(List<Float[]> buffer){
+        float [] ret = new float[buffer.size()];
+
+        Iterator<Float[]> iterator = buffer.iterator();
+        int i = 0;
+        while(iterator.hasNext()){
+           Float [] tmp =  iterator.next();
+            ret[i] = (float) Math.sqrt((double)(Math.pow(tmp[0],2)+Math.pow(tmp[1],2)+Math.pow(tmp[2],2)));
+            i++;
+        }
+
+        return ret;
+
+    }
+
+    public float [] getSlopes(float [] rise, long [] run){
+        float [] ret = new float[rise.length];
+        int x1=0;
+        int x2=1;
+        for(;x2<rise.length;x2++){
+            Log.i(TAG,"run[X2]: "+run[x2]+" run[X1]: "+run[x1]);
+            float deltaX = run[x2]-run[x1];
+            float deltaY = rise[x2]-run[x1];
+            ret[x1] = (deltaY/deltaX);
+            x1++;
+            Log.i(TAG,"deltaX: "+deltaX+" deltaY: "+deltaY);
+            Log.i(TAG,"dy/dx = "+ret[x1-1]);
+        }
+        return ret;
+    }
+
+    public float[] getDerivativesOfTheSlopes(float []slopes){
+        float [] ret = new float[slopes.length];
+
+        for (int i=0; i<slopes.length; i++){
+            ret[i] =(float) (-Math.sin(slopes[i]));
+            Log.i(TAG,"derivative = "+ret[i]);
+        }
+
+        return ret;
+    }
+
+    public float[] floatConversion(Float[] from){
+        float [] to = new float[from.length];
+
+        for (int i=0; i<from.length; i++){
+            to[i] = from[i];
+        }
+        return to;
+    }
+
+    public Float[] oFloatConversion(float[] from){
+        Float [] to = new Float[from.length];
+        for (int i=0; i<from.length; i++){
+            to[i] = from[i];
+        }
+        return to;
+    }
+
     /**
      * Here is where you will receive accelerometer readings, buffer them if necessary
      * and run your step detection algorithm. When a step is detected, call
@@ -97,91 +161,59 @@ public class StepDetector implements SensorEventListener {
 
 
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            if(buffer.size()<maxBufferCount) {
+                Float[] values = new Float[3];
+                for (int i = 0; i < values.length; i++) {
+                    values[i] = event.values[i];
+                }
+                long curTimeStamp = (long) ((double) event.timestamp / Constants.TIMESTAMPS.NANOSECONDS_PER_MILLISECOND);
 
-            float[] fv = filter.getFilteredValues(event.values);
-            Float[] nFv = new Float[fv.length];
-            for(int i=0; i<fv.length; i++){
-                nFv[i] = fv[i];
-            }
-
-            buffer.add(nFv);
-            bufferCounter++;
-            if(bufferCounter == maxBufferCount){
-                bufferFilled = true;
-                bufferCounter = 0;
-                buffAccuFirstTime = true;
-            }
-
-            if(bufferFilled){
-                bufferFilled=false;
-
-                for (Float[] e : buffer) {
-
-
-                    if (minX > e[0]) {
-                        minX = e[0];
-                    }
-                    if (maxX < e[0]) {
-                        maxX = e[0];
-                    }
-                    if (minY > e[1]) {
-                        minY = e[1];
-                    }
-                    if (maxY < e[1]) {
-                        maxY = e[1];
-                    }
-                    if (minZ > e[2]) {
-                        minZ = e[2];
-                    }
-                    if (maxZ < e[2]) {
-                        maxZ = e[2];
-                    }
+                buffer.add(values);
+                timeStampBuffer.add(curTimeStamp);
+            } else if (buffer.size() == maxBufferCount){
+//                float [] fv = filter.getFilteredValues(calcMags(buffer));
+                LinkedList<Float []>fv = new LinkedList<>();
+                for (int i=0; i<buffer.size(); i++){
+                    fv.add(oFloatConversion(filter.getFilteredValues(floatConversion(buffer.get(i)))));
                 }
 
-                if (maxX > maxY && maxX > maxZ) {
-                    dynThreshold = (minX+maxX)/2;
-                    lastWindowVal = buffer.getLast()[0];
-                    x=true; y=z=false;
-
-                } else if (maxY > maxZ) {
-                    dynThreshold = (minY+ maxY)/2;
-                    lastWindowVal = buffer.getLast()[1];
-                    y=true; x=z=false;
-                } else {
-                    dynThreshold = (minZ+maxZ)/2;
-                    lastWindowVal = buffer.getLast()[2];
-                    z=true; x=y=false;
+                float[] mags = calcMags(fv);
+               Iterator<Long> tmp =  timeStampBuffer.iterator();
+                long [] timeStamps = new long[timeStampBuffer.size()];
+                int iterator = 0;
+                while (tmp.hasNext()){
+                    Long val = tmp.next();
+                    timeStamps[iterator] = val;
                 }
-                maxX = maxY = maxZ = 0;
+                float [] derivatives = getDerivativesOfTheSlopes(getSlopes(mags,timeStamps));
+                //starts off being negative;
+                boolean negative;
+                if(derivatives[0] >= 0 ){
+                    negative=false;
+                }else {
+                    negative = true;
+                }
+
+                for (int i=1; i<derivatives.length; i+=2){
+                    if(derivatives[i]>=0 && negative){
+                        Log.i(TAG,"it was negative");
+                        negative =false;
+                        float [] tm = new float[3];
+                        Float [] t = buffer.get(i);
+                        for (int j=0; j<3; j++){
+                            tm[j] = t[j];
+                        }
+                        onStepDetected(timeStampBuffer.get(i).longValue(),tm);
+                    } else{
+                        Log.i(TAG,"it is negative: "+derivatives[i]);
+
+                        negative = true;
+                    }
+
+                }
                 buffer.clear();
-                return ;
-
+                timeStampBuffer.clear();
             }
-            if(buffAccuFirstTime){
-                Float value;
-                if(x){
-                    value = fv[0];
-
-
-                } else if(y){
-                    value = fv[1];
-
-                } else {
-                    value = fv[2];
-                }
-
-                if(value < dynThreshold && lastWindowVal > value){
-                    long curTimeStamp = (long) ((double) event.timestamp / Constants.TIMESTAMPS.NANOSECONDS_PER_MILLISECOND);
-                    if(curTimeStamp-lastStepped >=window) {
-                        onStepDetected(event.timestamp, event.values);
-                        lastStepped = curTimeStamp;
-                    }
-
-                }
-                lastWindowVal = value;
-            }
-
-
             }
 
 
