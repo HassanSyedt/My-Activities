@@ -29,17 +29,15 @@ public class StepDetector implements SensorEventListener {
      * Maintains the set of listeners registered to handle step events.
      **/
     private ArrayList<OnStepListener> mStepListeners;
-    private Filter filter = new Filter(1);
+    private Filter filter = new Filter(2);
     private LinkedList<Float []> buffer = new LinkedList<>();
-    //.5 seconds
-    private double window = 1000000 * 1000*.5;
+    private double window = 1000000 * 1000;
     private long lastStepped = 0;
     private int bufferCounter = 0;
     final private int maxBufferCount = 30;
-    private boolean bufferFilled = false;
     float minX, minY, minZ, maxX, maxY, maxZ;
     private float dynThreshold;
-    private Float lastWindowVal;
+    private float lastWindowVal;
     private boolean buffAccuFirstTime = false;
     private boolean x,y,z;
 
@@ -92,11 +90,9 @@ public class StepDetector implements SensorEventListener {
      */
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Log.i(TAG, "In OnSensorChanged in StepDetector");
-        Log.i(TAG, event.sensor.getType() + "");
-
 
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+
 
             float[] fv = filter.getFilteredValues(event.values);
             Float[] nFv = new Float[fv.length];
@@ -107,17 +103,10 @@ public class StepDetector implements SensorEventListener {
             buffer.add(nFv);
             bufferCounter++;
             if(bufferCounter == maxBufferCount){
-                bufferFilled = true;
                 bufferCounter = 0;
                 buffAccuFirstTime = true;
-            }
-
-            if(bufferFilled){
-                bufferFilled=false;
 
                 for (Float[] e : buffer) {
-
-
                     if (minX > e[0]) {
                         minX = e[0];
                     }
@@ -152,7 +141,7 @@ public class StepDetector implements SensorEventListener {
                     lastWindowVal = buffer.getLast()[2];
                     z=true; x=y=false;
                 }
-                maxX = maxY = maxZ = 0;
+                maxX = maxY = maxZ = minX = minY = minZ = 0;
                 buffer.clear();
                 return ;
 
@@ -161,30 +150,25 @@ public class StepDetector implements SensorEventListener {
                 Float value;
                 if(x){
                     value = fv[0];
-
-
                 } else if(y){
                     value = fv[1];
-
                 } else {
                     value = fv[2];
                 }
 
-                if(value < dynThreshold && lastWindowVal > value){
+                if((value < dynThreshold) && (lastWindowVal > dynThreshold)){
+                    Log.i(TAG, "In Treshold");
                     long curTimeStamp = (long) ((double) event.timestamp / Constants.TIMESTAMPS.NANOSECONDS_PER_MILLISECOND);
-                    if(curTimeStamp-lastStepped >=window) {
-                        onStepDetected(event.timestamp, event.values);
-                        lastStepped = curTimeStamp;
+                    if(event.timestamp-lastStepped >= window) {
+                        Log.i(TAG, "Window: " +  window);
+                        onStepDetected(curTimeStamp, event.values);
+                        lastStepped = event.timestamp;
                     }
-
                 }
                 lastWindowVal = value;
             }
 
-
             }
-
-
         }
 
 
