@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import cs.umass.edu.myactivitiestoolkit.constants.Constants;
 import cs.umass.edu.myactivitiestoolkit.util.ImageFormatConverter;
 
 /**
@@ -226,6 +227,20 @@ public class HeartRateCameraView extends SurfaceView implements Callback, Camera
         ImageFormatConverter.decodeYUV420SP(pixels, data, width, height);
 
         //TODO: Compute the mean red value and notify all listeners
+        int sum = 0;
+
+        int i =0;
+        for(int p: pixels){
+            sum+= Color.red(p);
+        }
+        Long tsLong = System.nanoTime()/Constants.TIMESTAMPS.NANOSECONDS_PER_MILLISECOND;
+
+        double value = sum/pixels.length;
+        for(PPGListener listener: listeners){
+            listener.onSensorChanged(new PPGEvent(value,tsLong));
+        }
+
+
     }
 
     /**

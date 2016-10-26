@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -155,6 +156,8 @@ public class ExerciseFragment extends Fragment {
     /** Reference to the service manager which communicates to the {@link AccelerometerService}. **/
     private ServiceManager mServiceManager;
 
+    private RadioGroup labelGroup;
+
     /**
      * The receiver listens for messages from the {@link AccelerometerService}, e.g. was the
      * service started/stopped, and updates the status views accordingly. It also
@@ -237,6 +240,8 @@ public class ExerciseFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_exercise, container, false);
+
+        labelGroup = (RadioGroup) view.findViewById(R.id.labelGroup);
 
         //obtain a reference to the accelerometer reading text field
         txtAccelerometerReading = (TextView) view.findViewById(R.id.txtAccelerometerReading);

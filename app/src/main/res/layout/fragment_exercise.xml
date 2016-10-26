@@ -107,6 +107,42 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <RadioGroup
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:id="@+id/labelGroup">
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="sit"
+                android:id="@+id/sitButton"
+                android:checked="false" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="walk"
+                android:id="@+id/walkButton"
+                android:checked="false" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Jog"
+                android:id="@+id/jogButton"
+                android:checked="false" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Jump"
+                android:id="@+id/jumpButton"
+                android:checked="false" />
+        </RadioGroup>
+
         <TextView
             android:id="@+id/txtActivity"
             android:drawableStart="@drawable/ic_running_black_48dp"

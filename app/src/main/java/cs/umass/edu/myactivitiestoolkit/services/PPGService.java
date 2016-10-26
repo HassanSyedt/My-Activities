@@ -10,6 +10,8 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.WindowManager;
 
+import java.util.LinkedList;
+
 import cs.umass.edu.myactivitiestoolkit.R;
 import cs.umass.edu.myactivitiestoolkit.ppg.HRSensorReading;
 import cs.umass.edu.myactivitiestoolkit.ppg.PPGSensorReading;
@@ -19,6 +21,7 @@ import cs.umass.edu.myactivitiestoolkit.ppg.PPGEvent;
 import cs.umass.edu.myactivitiestoolkit.ppg.PPGListener;
 import cs.umass.edu.myactivitiestoolkit.processing.FFT;
 import cs.umass.edu.myactivitiestoolkit.processing.Filter;
+import cs.umass.edu.myactivitiestoolkit.util.Converter;
 import cs.umass.edu.myactivitiestoolkit.util.Interpolator;
 import edu.umass.cs.MHLClient.client.MobileIOClient;
 
@@ -57,6 +60,10 @@ public class PPGService extends SensorService implements PPGListener
 
     /* Surface view responsible for collecting PPG data and displaying the camera preview. */
     private HeartRateCameraView mPPGSensor;
+    Filter filter = new Filter(3.8f);
+
+    private LinkedList<Double> buffer = new LinkedList<>();
+    private LinkedList<Long> timeBuffer = new LinkedList<>();
 
     @Override
     protected void start() {
@@ -112,11 +119,13 @@ public class PPGService extends SensorService implements PPGListener
     @Override
     protected void registerSensors() {
         // TODO: Register a PPG listener with the PPG sensor (mPPGSensor)
+        mPPGSensor.registerListener(this);
     }
 
     @Override
     protected void unregisterSensors() {
         // TODO: Unregister the PPG listener
+        mPPGSensor.unregisterListeners();
     }
 
     @Override
@@ -158,12 +167,35 @@ public class PPGService extends SensorService implements PPGListener
     @SuppressWarnings("deprecation")
     @Override
     public void onSensorChanged(PPGEvent event) {
-        // TODO: Smooth the signal using a Butterworth / exponential smoothing filter
-        // TODO: send the data to the UI fragment for visualization, using broadcastPPGReading(...)
-        // TODO: Send the filtered mean red value to the server
+        // TODO: Smooth the signal using a Butterworth / exponential smoothing filter // done
+        // TODO: send the data to the UI fragment for visualization, using broadcastPPGReading(...) // done
+        // TODO: Send the filtered mean red value to the server // done
         // TODO: Buffer data if necessary for your algorithm
         // TODO: Call your heart beat and bpm detection algorithm
         // TODO: Send your heart rate estimate to the server
+
+//        if(buffer.size()%60 != 0) {
+//            timeBuffer.add(new Long(event.timestamp));
+//            buffer.add(new Double(event.value));
+//        } else{
+//            double dv [] = new double[buffer.size()];
+//            int fCounter = 0;
+//            for(Double d: buffer){
+//                dv[fCounter] = d;
+//            }//
+//            dv = filter.getFilteredValues(dv);
+            //Converter<Float,Double> dTf = new Converter<>();
+            //Float f = dTf.convert(event.value);
+            float f =(float) event.value;
+            double filteredReading = (double) filter.getFilteredValues(f)[0];
+
+            PPGSensorReading reading = new PPGSensorReading(mUserID,"Nexus 6p","hassan",event.timestamp,filteredReading);
+            broadcastPPGReading(event.timestamp,filteredReading);
+            mClient.sendSensorReading(reading);
+
+//        }
+
+
     }
 
     /**
